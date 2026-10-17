@@ -1,240 +1,31 @@
-import React, { useState, useRef } from "react";
-import {
-  motion,
-  useScroll,
-  useVelocity,
-  useTransform,
-  useSpring,
-  AnimatePresence,
-} from "framer-motion";
-import { Plus, Check, Trash2, Calendar, Flame, Bell, Sparkles } from "lucide-react";
-
-// --- Scroll-Shifting Velocity Header Component ---
-function ScrollHeader({ title }) {
-  const { scrollY } = useScroll();
-  const scrollVelocity = useVelocity(scrollY);
-  
-  // Smooth out velocity changes
-  const smoothVelocity = useSpring(scrollVelocity, {
-    damping: 50,
-    stiffness: 400,
-  });
-
-  // Map scroll velocity to horizontal shift (X-axis) and subtle skew
-  const xShift = useTransform(smoothVelocity, [-2000, 0, 2000], [-80, 0, 80]);
-  const skewX = useTransform(smoothVelocity, [-2000, 0, 2000], [-12, 0, 12]);
-
-  return (
-    <div className="overflow-hidden py-4 sticky top-0 bg-slate-950/80 backdrop-blur-md z-20 border-b border-slate-800/50">
-      <motion.h1
-        style={{ x: xShift, skewX }}
-        className="text-4xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-500 whitespace-nowrap text-center transition-transform duration-75"
-      >
-        {title}
-      </motion.h1>
-    </div>
-  );
-}
-
-// --- Main App Component ---
-export default function ReminderApp() {
-  const [reminders, setReminders] = useState([
-    { id: 1, text: "Push initial commit to GitHub repository", urgent: true, completed: false, date: "Today" },
-    { id: 2, text: "Configure Tailwind CSS and Framer Motion hooks", urgent: false, completed: true, date: "Yesterday" },
-    { id: 3, text: "Implement custom scroll velocity kinetic typography", urgent: true, completed: false, date: "Tomorrow" },
-    { id: 4, text: "Set up GitHub Pages auto-deployment workflow", urgent: false, completed: false, date: "Aug 10" },
-  ]);
-
-  const [inputText, setInputText] = useState("");
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [filter, setFilter] = useState("all");
-
-  const addReminder = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    const newReminder = {
-      id: Date.now(),
-      text: inputText,
-      urgent: isUrgent,
-      completed: false,
-      date: "Today",
-    };
-
-    setReminders([newReminder, ...reminders]);
-    setInputText("");
-    setIsUrgent(false);
-  };
-
-  const toggleComplete = (id) => {
-    setReminders(
-      reminders.map((r) => (r.id === id ? { ...r, completed: !r.completed } : r))
-    );
-  };
-
-  const deleteReminder = (id) => {
-    setReminders(reminders.filter((r) => r.id !== id));
-  };
-
-  const filteredReminders = reminders.filter((r) => {
-    if (filter === "urgent") return r.urgent && !r.completed;
-    if (filter === "completed") return r.completed;
-    return true;
-  });
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-pink-500 selection:text-white">
-      {/* Dynamic Kinetic Typography Header */}
-      <ScrollHeader title="REMINDR • SCROLL TO SHIFT • REMINDR" />
-
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {/* Input Form */}
-        <motion.form
-          onSubmit={addReminder}
-          layout
-          className="bg-slate-900/90 border border-slate-800 p-2 sm:p-3 rounded-2xl shadow-2xl mb-8 flex items-center gap-2 focus-within:border-indigo-500/50 transition-colors"
-        >
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Add a cool new reminder..."
-            className="flex-1 bg-transparent px-4 py-2 text-slate-100 outline-none placeholder:text-slate-500 text-sm sm:text-base"
-          />
-
-          <button
-            type="button"
-            onClick={() => setIsUrgent(!isUrgent)}
-            className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold ${
-              isUrgent
-                ? "bg-rose-500/20 border-rose-500/50 text-rose-400"
-                : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Flame className={`w-4 h-4 ${isUrgent ? "animate-pulse" : ""}`} />
-            <span className="hidden sm:inline">Urgent</span>
-          </button>
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            type="submit"
-            className="bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white p-3 rounded-xl font-medium shadow-lg shadow-indigo-500/20 flex items-center justify-center"
-          >
-            <Plus className="w-5 h-5" />
-          </motion.button>
-        </motion.form>
-
-        {/* Filter Controls */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-            {["all", "urgent", "completed"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all relative ${
-                  filter === f ? "text-white" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {filter === f && (
-                  <motion.div
-                    layoutId="activeFilter"
-                    className="absolute inset-0 bg-indigo-600/60 border border-indigo-400/30 rounded-lg -z-10"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                {f}
-              </button>
-            ))}
-          </div>
-
-          <span className="text-xs text-slate-500 font-mono">
-            {reminders.filter((r) => !r.completed).length} active
-          </span>
-        </div>
-
-        {/* Reminder List */}
-        <div className="space-y-3 pb-32">
-          <AnimatePresence mode="popLayout">
-            {filteredReminders.map((reminder) => (
-              <motion.div
-                key={reminder.id}
-                layout
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -100, scale: 0.9 }}
-                whileHover={{ scale: 1.01, x: 2 }}
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                className={`group relative overflow-hidden rounded-2xl p-4 border transition-all ${
-                  reminder.completed
-                    ? "bg-slate-900/40 border-slate-800/40 opacity-60"
-                    : reminder.urgent
-                    ? "bg-gradient-to-r from-rose-950/30 to-slate-900 border-rose-500/30 shadow-lg shadow-rose-950/20"
-                    : "bg-slate-900/80 border-slate-800"
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  {/* Completion Toggle */}
-                  <motion.button
-                    whileTap={{ scale: 0.8 }}
-                    onClick={() => toggleComplete(reminder.id)}
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-colors ${
-                      reminder.completed
-                        ? "bg-emerald-500 border-emerald-400 text-slate-950"
-                        : "border-slate-700 bg-slate-800/50 hover:border-slate-500"
-                    }`}
-                  >
-                    {reminder.completed && <Check className="w-4 h-4 stroke-[3]" />}
-                  </motion.button>
-
-                  {/* Task Content */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-sm sm:text-base font-medium truncate transition-all ${
-                        reminder.completed
-                          ? "line-through text-slate-500"
-                          : "text-slate-100"
-                      }`}
-                    >
-                      {reminder.text}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {reminder.date}
-                      </span>
-                      {reminder.urgent && !reminder.completed && (
-                        <span className="flex items-center gap-1 text-rose-400 font-semibold">
-                          <Flame className="w-3 h-3" /> High Urgency
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Delete Action */}
-                  <button
-                    onClick={() => deleteReminder(reminder.id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {filteredReminders.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12 border border-dashed border-slate-800 rounded-2xl"
-            >
-              <Sparkles className="w-8 h-8 mx-auto text-slate-600 mb-2" />
-              <p className="text-slate-500 text-sm">No reminders found in this view.</p>
-            </motion.div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#05050b" />
+    <meta
+      name="description"
+      content="SHADOW SYSTEM — a dark-fantasy fitness RPG. Real workouts become quests, consistency earns XP, and personal progress unlocks hunter ranks."
+    />
+    <title>SHADOW SYSTEM — Fitness RPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307070f'/%3E%3Cpath d='M32 10 50 20v14c0 12-8 18-18 22-10-4-18-10-18-22V20z' fill='none' stroke='%238b5cf6' stroke-width='4'/%3E%3Ccircle cx='32' cy='30' r='6' fill='%2322d3ee'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>SHADOW SYSTEM requires JavaScript to run.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

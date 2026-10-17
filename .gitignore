@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.logs/
+*.local
+.DS_Store
+# Environment/preview-local artifacts
+.freebuff/
+SHADOW-SYSTEM-CODE.txt
